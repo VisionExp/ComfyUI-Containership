@@ -1,0 +1,23 @@
+{{container_name}}:
+    build:
+      context: ./{{container_name}}
+      dockerfile: Dockerfile
+    container_name: {{container_name}}
+    ports:
+      - "{{port}}:8188"
+    volumes:
+      - ./{{container_name}}/ComfyUI:/ComfyUI
+      - ./{{container_name}}/output:/ComfyUI/output
+      - ./{{container_name}}/input:/ComfyUI/input
+      - {{shared_models_dir}}:/ComfyUI/models
+      - ./{{container_name}}/custom_nodes:/ComfyUI/custom_nodes
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - {{network}}
