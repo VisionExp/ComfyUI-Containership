@@ -139,7 +139,8 @@ for %%t in (dockerfile service setup) do (
 
     if exist "!OUTPUT_FILE!" del "!OUTPUT_FILE!" 2>nul
 
-    for /f "delims=" %%l in ('type "!TEMPLATE_FILE!"') do (
+    rem Process template content
+    for /f "usebackq delims=" %%l in ("!TEMPLATE_FILE!") do (
         set "line=%%l"
         set "line=!line:{{container_name}}=%CONTAINER_NAME%!"
         set "line=!line:{{port}}=%PORT%!"
