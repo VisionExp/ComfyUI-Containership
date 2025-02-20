@@ -153,8 +153,26 @@ rem Update docker-compose.yml with proper indentation
 if exist "temp_service.yml" (
     if not exist "%DOCKER_COMPOSE_FILE%" (
         echo Creating new docker-compose.yml
-        echo version: '3.3'>"%DOCKER_COMPOSE_FILE%"
-        echo services:>>"%DOCKER_COMPOSE_FILE%"
+        echo services:>"%DOCKER_COMPOSE_FILE%"
+        echo networks:>>"%DOCKER_COMPOSE_FILE%"
+        echo   %DOCKER_NETWORK%:>>"%DOCKER_COMPOSE_FILE%"
+        echo     name: %DOCKER_NETWORK%>>"%DOCKER_COMPOSE_FILE%"
+    ) else (
+        rem Check if networks section exists
+        findstr /r /c:"^networks:" "%DOCKER_COMPOSE_FILE%" >nul
+        if errorlevel 1 (
+            echo.>>"%DOCKER_COMPOSE_FILE%"
+            echo networks:>>"%DOCKER_COMPOSE_FILE%"
+            echo   %DOCKER_NETWORK%:>>"%DOCKER_COMPOSE_FILE%"
+            echo     name: %DOCKER_NETWORK%>>"%DOCKER_COMPOSE_FILE%"
+        ) else (
+            rem Check if specific network exists
+            findstr /r /c:"^  %DOCKER_NETWORK%:" "%DOCKER_COMPOSE_FILE%" >nul
+            if errorlevel 1 (
+                echo   %DOCKER_NETWORK%:>>"%DOCKER_COMPOSE_FILE%"
+                echo     name: %DOCKER_NETWORK%>>"%DOCKER_COMPOSE_FILE%"
+            )
+        )
     )
 
     echo Updating docker-compose.yml with proper indentation...

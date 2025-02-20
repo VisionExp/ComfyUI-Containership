@@ -1,2 +1,5 @@
-version: '3.8'
 services:
+
+networks:
+  comfyui_network:
+    name: comfyui_network
