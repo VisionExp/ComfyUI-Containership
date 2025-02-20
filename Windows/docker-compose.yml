@@ -1,2 +1,71 @@
 version: '3.8'
 services:
+  new_container_01:
+      build:
+        context: ./new_container_01
+        dockerfile: Dockerfile
+      container_name: new_container_01
+      ports:
+        - "8189:8188"
+      volumes:
+        - ./new_container_01/ComfyUI:/ComfyUI
+        - ./new_container_01/output:/ComfyUI/output
+        - ./new_container_01/input:/ComfyUI/input
+        - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/ComfyUI/models
+        - ./new_container_01/custom_nodes:/ComfyUI/custom_nodes
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: all
+                capabilities: [gpu]
+      restart: unless-stopped
+      networks:
+        - comfyui_network
+  new_container_02:
+      build:
+        context: ./new_container_02
+        dockerfile: Dockerfile
+      container_name: new_container_02
+      ports:
+        - "8190:8188"
+      volumes:
+        - ./new_container_02/ComfyUI:/ComfyUI
+        - ./new_container_02/output:/ComfyUI/output
+        - ./new_container_02/input:/ComfyUI/input
+        - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/ComfyUI/models
+        - ./new_container_02/custom_nodes:/ComfyUI/custom_nodes
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: all
+                capabilities: [gpu]
+      restart: unless-stopped
+      networks:
+        - comfyui_network
+  new_container_03:
+      build:
+        context: ./new_container_03
+        dockerfile: Dockerfile
+      container_name: new_container_03
+      ports:
+        - "8191:8188"
+      volumes:
+        - ./new_container_03/ComfyUI:/ComfyUI
+        - ./new_container_03/output:/ComfyUI/output
+        - ./new_container_03/input:/ComfyUI/input
+        - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/ComfyUI/models
+        - ./new_container_03/custom_nodes:/ComfyUI/custom_nodes
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: all
+                capabilities: [gpu]
+      restart: unless-stopped
+      networks:
+        - comfyui_network
