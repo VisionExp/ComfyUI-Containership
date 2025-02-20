@@ -2,4 +2,4 @@ services:
 
 networks:
   comfyui_network:
-    name: comfyui_network
+    external: true

@@ -151,27 +151,26 @@ for %%t in (dockerfile service setup) do (
 
 rem Update docker-compose.yml with proper indentation
 if exist "temp_service.yml" (
+    rem Create new docker-compose.yml with proper structure
     if not exist "%DOCKER_COMPOSE_FILE%" (
         echo Creating new docker-compose.yml
-        echo services:>"%DOCKER_COMPOSE_FILE%"
-        echo networks:>>"%DOCKER_COMPOSE_FILE%"
-        echo   %DOCKER_NETWORK%:>>"%DOCKER_COMPOSE_FILE%"
-        echo     name: %DOCKER_NETWORK%>>"%DOCKER_COMPOSE_FILE%"
+        (
+            echo services:
+            echo.
+            echo networks:
+            echo   comfyui_network:
+            echo     external: true
+        ) > "%DOCKER_COMPOSE_FILE%"
     ) else (
         rem Check if networks section exists
         findstr /r /c:"^networks:" "%DOCKER_COMPOSE_FILE%" >nul
         if errorlevel 1 (
-            echo.>>"%DOCKER_COMPOSE_FILE%"
-            echo networks:>>"%DOCKER_COMPOSE_FILE%"
-            echo   %DOCKER_NETWORK%:>>"%DOCKER_COMPOSE_FILE%"
-            echo     name: %DOCKER_NETWORK%>>"%DOCKER_COMPOSE_FILE%"
-        ) else (
-            rem Check if specific network exists
-            findstr /r /c:"^  %DOCKER_NETWORK%:" "%DOCKER_COMPOSE_FILE%" >nul
-            if errorlevel 1 (
-                echo   %DOCKER_NETWORK%:>>"%DOCKER_COMPOSE_FILE%"
-                echo     name: %DOCKER_NETWORK%>>"%DOCKER_COMPOSE_FILE%"
-            )
+            (
+                echo.
+                echo networks:
+                echo   comfyui_network:
+                echo     external: true
+            ) >> "%DOCKER_COMPOSE_FILE%"
         )
     )
 
@@ -180,10 +179,16 @@ if exist "temp_service.yml" (
     rem Create a temporary file for the indented service
     if exist "temp_indented.yml" del "temp_indented.yml"
 
-    rem Add indentation to each non-empty line
-    for /f "delims=" %%l in (temp_service.yml) do (
-        echo   %%l>>temp_indented.yml
-    )
+    rem Add indentation to each non-empty line and ensure network is configured correctly
+    (
+        echo   %CONTAINER_NAME%:
+        for /f "delims=" %%l in (temp_service.yml) do (
+            set "line=%%l"
+            echo     %%l
+        )
+        echo     networks:
+        echo       - comfyui_network
+    ) > temp_indented.yml
 
     rem Find the networks section if it exists
     set "networks_line="
