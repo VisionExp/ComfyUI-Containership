@@ -1,18 +1,20 @@
 @echo off
 setlocal enabledelayedexpansion
 
-rem Configuration variables
-set "SCRIPT_DIR=%~dp0"
-set "BASE_DIR=%SCRIPT_DIR%containers"
-set "SHARED_MODELS_DIR=%SCRIPT_DIR%shared_models"
+rem Change to the script's directory
+cd /d "%~dp0"
+
+rem Configuration variables - now using relative paths
+set "BASE_DIR=containers"
+set "SHARED_MODELS_DIR=shared_models"
 set "DOCKER_NETWORK=comfyui_network"
 set "BASE_PORT=8188"
-set "DOCKER_COMPOSE_FILE=%SCRIPT_DIR%docker-compose.yml"
-set "TEMPLATES_DIR=%SCRIPT_DIR%templates"
+set "DOCKER_COMPOSE_FILE=docker-compose.yml"
+set "TEMPLATES_DIR=templates"
 
 rem Clear screen and show welcome message
 cls
-echo ComfyUI Containership 0.0.1
+echo ComfyUI Container Setup Script
 echo ============================
 echo.
 
@@ -42,6 +44,7 @@ if /i not "%CONFIRM%"=="Y" goto get_container_name
 set "CONTAINER_PATH=%BASE_DIR%\%CONTAINER_NAME%"
 
 echo.
+echo Current directory: %CD%
 echo Creating directories...
 echo Base directory: %BASE_DIR%
 echo Container path: %CONTAINER_PATH%
@@ -64,7 +67,8 @@ echo Template directory: %TEMPLATES_DIR%
 
 if not exist "%TEMPLATES_DIR%" (
     echo Error: Templates directory not found!
-    echo Looking for: %TEMPLATES_DIR%
+    echo Current directory: %CD%
+    echo Looking for: %CD%\%TEMPLATES_DIR%
     echo.
     echo Please ensure the 'templates' folder exists in the same directory as this script
     echo with the following files:
@@ -135,22 +139,56 @@ for %%t in (dockerfile service setup) do (
 
     if exist "!OUTPUT_FILE!" del "!OUTPUT_FILE!" 2>nul
 
-    for /f "delims=" %%l in ('type "!TEMPLATE_FILE!"') do (
+    rem Process template content
+    for /f "usebackq delims=" %%l in ("!TEMPLATE_FILE!") do (
         set "line=%%l"
-        set "line=!line:{{container_name}}=%CONTAINER_NAME%!"
-        set "line=!line:{{port}}=%PORT%!"
-        set "line=!line:{{shared_models_dir}}=%SHARED_MODELS_DIR%!"
-        set "line=!line:{{network}}=%DOCKER_NETWORK%!"
-        echo !line!>>"!OUTPUT_FILE!"
+
+        rem Handle context path specially for service template
+        if "%%t"=="service" (
+            echo !line! | findstr /i "context:" >nul
+            if not errorlevel 1 (
+                echo       context: ./containers/!CONTAINER_NAME!>>"!OUTPUT_FILE!"
+            ) else (
+                set "line=!line:{{container_name}}=%CONTAINER_NAME%!"
+                set "line=!line:{{port}}=%PORT%!"
+                set "line=!line:./{{container_name}}=./containers/%CONTAINER_NAME%!"
+                set "line=!line:{{shared_models_dir}}=%CD%\%SHARED_MODELS_DIR%!"
+                set "line=!line:{{network}}=%DOCKER_NETWORK%!"
+                echo !line!>>"!OUTPUT_FILE!"
+            )
+        ) else (
+            set "line=!line:{{container_name}}=%CONTAINER_NAME%!"
+            set "line=!line:{{port}}=%PORT%!"
+            set "line=!line:{{shared_models_dir}}=%CD%\%SHARED_MODELS_DIR%!"
+            set "line=!line:{{network}}=%DOCKER_NETWORK%!"
+            echo !line!>>"!OUTPUT_FILE!"
+        )
     )
 )
 
 rem Update docker-compose.yml with proper indentation
 if exist "temp_service.yml" (
+    rem Create new docker-compose.yml with proper structure
     if not exist "%DOCKER_COMPOSE_FILE%" (
         echo Creating new docker-compose.yml
-        echo version: '3.3'>"%DOCKER_COMPOSE_FILE%"
-        echo services:>>"%DOCKER_COMPOSE_FILE%"
+        (
+            echo services:
+            echo.
+            echo networks:
+            echo   comfyui_network:
+            echo     external: true
+        ) > "%DOCKER_COMPOSE_FILE%"
+    ) else (
+        rem Check if networks section exists
+        findstr /r /c:"^networks:" "%DOCKER_COMPOSE_FILE%" >nul
+        if errorlevel 1 (
+            (
+                echo.
+                echo networks:
+                echo   comfyui_network:
+                echo     external: true
+            ) >> "%DOCKER_COMPOSE_FILE%"
+        )
     )
 
     echo Updating docker-compose.yml with proper indentation...
@@ -158,10 +196,16 @@ if exist "temp_service.yml" (
     rem Create a temporary file for the indented service
     if exist "temp_indented.yml" del "temp_indented.yml"
 
-    rem Add indentation to each non-empty line
-    for /f "delims=" %%l in (temp_service.yml) do (
-        echo   %%l>>temp_indented.yml
-    )
+    rem Add indentation to each non-empty line and ensure network is configured correctly
+    (
+        echo   %CONTAINER_NAME%:
+        for /f "delims=" %%l in (temp_service.yml) do (
+            set "line=%%l"
+            echo     %%l
+        )
+        echo     networks:
+        echo       - comfyui_network
+    ) > temp_indented.yml
 
     rem Find the networks section if it exists
     set "networks_line="
@@ -223,17 +267,17 @@ echo New service '%CONTAINER_NAME%' added to %DOCKER_COMPOSE_FILE%
 echo Port assigned: %PORT%
 echo.
 echo Created directories:
-echo - Base directory: %BASE_DIR%
-echo - Container directory: %CONTAINER_PATH%
-echo - Input directory: %CONTAINER_PATH%\input
-echo - Output directory: %CONTAINER_PATH%\output
-echo - Custom nodes directory: %CONTAINER_PATH%\custom_nodes
-echo - Scripts directory: %CONTAINER_PATH%\scripts
+echo - Base directory: %CD%\%BASE_DIR%
+echo - Container directory: %CD%\%CONTAINER_PATH%
+echo - Input directory: %CD%\%CONTAINER_PATH%\input
+echo - Output directory: %CD%\%CONTAINER_PATH%\output
+echo - Custom nodes directory: %CD%\%CONTAINER_PATH%\custom_nodes
+echo - Scripts directory: %CD%\%CONTAINER_PATH%\scripts
 echo.
 echo Created files:
-echo - Dockerfile: %CONTAINER_PATH%\Dockerfile
-echo - Setup script: %CONTAINER_PATH%\scripts\example_setup.sh
-echo - Docker Compose: %DOCKER_COMPOSE_FILE%
+echo - Dockerfile: %CD%\%CONTAINER_PATH%\Dockerfile
+echo - Setup script: %CD%\%CONTAINER_PATH%\scripts\example_setup.sh
+echo - Docker Compose: %CD%\%DOCKER_COMPOSE_FILE%
 echo.
 echo To start all containers:
 echo   docker-compose up -d --build
@@ -243,8 +287,8 @@ echo   docker-compose up -d --build %CONTAINER_NAME%
 echo.
 echo Access new ComfyUI instance at http://localhost:%PORT%
 echo.
-echo Note: All containers are stored in: %BASE_DIR%
-echo Note: All containers share models from: %SHARED_MODELS_DIR%
+echo Note: All containers are stored in: %CD%\%BASE_DIR%
+echo Note: All containers share models from: %CD%\%SHARED_MODELS_DIR%
 echo.
 
 pause

@@ -1,5 +1,1 @@
 services:
-
-networks:
-  comfyui_network:
-    external: true
