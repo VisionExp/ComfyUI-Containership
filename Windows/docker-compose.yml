@@ -1,1 +1,28 @@
 services:
+  demo:
+      build:
+        context: ./containers/demo
+        dockerfile: Dockerfile
+      container_name: demo
+      ports:
+        - "8188:8188"
+      volumes:
+        - ./containers/demo/ComfyUI:/ComfyUI
+        - ./containers/demo/output:/ComfyUI/output
+        - ./containers/demo/input:/ComfyUI/input
+        - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/ComfyUI/models
+        - ./containers/demo/custom_nodes:/ComfyUI/custom_nodes
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: all
+                capabilities: [gpu]
+      restart: unless-stopped
+      runtime: nvidia
+      networks:
+        - comfyui_network
+networks:
+  comfyui_network:
+    external: true

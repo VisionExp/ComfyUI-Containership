@@ -19,5 +19,6 @@
               count: all
               capabilities: [gpu]
     restart: unless-stopped
+    runtime: nvidia
     networks:
       - {{network}}
