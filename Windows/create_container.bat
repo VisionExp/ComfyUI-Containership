@@ -12,7 +12,7 @@ set "TEMPLATES_DIR=%SCRIPT_DIR%templates"
 
 rem Clear screen and show welcome message
 cls
-echo ComfyUI Containership 0.0.1
+echo ComfyUI Containership 0.0.3
 echo ============================
 echo.
 
@@ -75,7 +75,7 @@ if not exist "%TEMPLATES_DIR%" (
     exit /b 1
 )
 
-for %%f in (dockerfile service setup) do (
+for %%f in (dockerfile service setup startup) do (
     if not exist "%TEMPLATES_DIR%\%%f.template" (
         echo Error: %%f.template not found in %TEMPLATES_DIR%
         echo Please ensure all template files are present
@@ -123,11 +123,12 @@ for %%d in (
 rem Process templates
 echo.
 echo Processing templates...
-for %%t in (dockerfile service setup) do (
+for %%t in (dockerfile service setup startup) do (
     set "TEMPLATE_FILE=%TEMPLATES_DIR%\%%t.template"
     if "%%t"=="dockerfile" set "OUTPUT_FILE=%CONTAINER_PATH%\Dockerfile"
     if "%%t"=="service" set "OUTPUT_FILE=temp_service.yml"
     if "%%t"=="setup" set "OUTPUT_FILE=%CONTAINER_PATH%\scripts\example_setup.sh"
+    if "%%t"=="startup" set "OUTPUT_FILE=%CONTAINER_PATH%\startup.sh"
 
     echo Processing template: %%t
     echo Input: !TEMPLATE_FILE!

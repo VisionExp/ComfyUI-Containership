@@ -5,12 +5,14 @@
     container_name: {{container_name}}
     ports:
       - "{{port}}:8188"
+      - "8888:8888"  # Jupyter Lab port
     volumes:
       - ./containers/{{container_name}}/ComfyUI:/ComfyUI
       - ./containers/{{container_name}}/output:/ComfyUI/output
       - ./containers/{{container_name}}/input:/ComfyUI/input
       - {{shared_models_dir}}:/ComfyUI/models
       - ./containers/{{container_name}}/custom_nodes:/ComfyUI/custom_nodes
+      - ./containers/{{container_name}}/notebooks:/notebooks
     deploy:
       resources:
         reservations:
@@ -20,5 +22,6 @@
               capabilities: [gpu]
     restart: unless-stopped
     runtime: nvidia
+    command: ["/startup.sh"]
     networks:
       - {{network}}

@@ -1,17 +1,19 @@
 services:
-  demo:
+  demo2:
       build:
-        context: ./containers/demo
+        context: ./containers/demo2
         dockerfile: Dockerfile
-      container_name: demo
+      container_name: demo2
       ports:
         - "8188:8188"
+        - "8888:8888"  # Jupyter Lab port
       volumes:
-        - ./containers/demo/ComfyUI:/ComfyUI
-        - ./containers/demo/output:/ComfyUI/output
-        - ./containers/demo/input:/ComfyUI/input
+        - ./containers/demo2/ComfyUI:/ComfyUI
+        - ./containers/demo2/output:/ComfyUI/output
+        - ./containers/demo2/input:/ComfyUI/input
         - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/ComfyUI/models
-        - ./containers/demo/custom_nodes:/ComfyUI/custom_nodes
+        - ./containers/demo2/custom_nodes:/ComfyUI/custom_nodes
+        - ./containers/demo2/notebooks:/notebooks
       deploy:
         resources:
           reservations:
@@ -21,6 +23,7 @@ services:
                 capabilities: [gpu]
       restart: unless-stopped
       runtime: nvidia
+      command: ["/startup.sh"]
       networks:
         - comfyui_network
 networks:

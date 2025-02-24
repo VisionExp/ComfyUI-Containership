@@ -86,11 +86,5 @@ RUN echo "c.NotebookApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_notebook_confi
 
 EXPOSE 8188 8888
 
-# Create a startup script to run both services
-RUN echo '#!/bin/bash\n\
-jupyter lab --allow-root --no-browser --port=8888 &\n\
-python3 main.py --listen 0.0.0.0 --port 8188' > /start.sh
-
-RUN chmod +x /start.sh
-
-CMD ["/start.sh"]
+COPY startup.sh /startup.sh
+RUN chmod +x /startup.sh
