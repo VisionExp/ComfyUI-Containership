@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_PREFER_BINARY=1 \
@@ -42,8 +42,7 @@ RUN ln -s /usr/bin/python3.10 /usr/bin/python
 
 RUN pip install --no-cache-dir git+https://github.com/huggingface/accelerate
 
-RUN pip install --no-cache-dir torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118
-
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 RUN pip install --no-cache-dir \
     opencv-python-headless==4.8.1.78 \
@@ -83,6 +82,8 @@ RUN jupyter notebook --generate-config
 RUN echo "c.NotebookApp.password = ''" >> /root/.jupyter/jupyter_notebook_config.py
 RUN echo "c.NotebookApp.token = ''" >> /root/.jupyter/jupyter_notebook_config.py
 RUN echo "c.NotebookApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_notebook_config.py
+RUN echo "c.NotebookApp.notebook_dir = '/home/ComfyUI'" >> /root/.jupyter/jupyter_notebook_config.py
+
 
 EXPOSE 8188 8888
 

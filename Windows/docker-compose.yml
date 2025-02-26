@@ -8,11 +8,10 @@ services:
         - "8188:8188"
         - "8888:8888"  # Jupyter Lab port
       volumes:
-        - ./containers/demo2/ComfyUI:/ComfyUI
-        - ./containers/demo2/output:/ComfyUI/output
-        - ./containers/demo2/input:/ComfyUI/input
-        - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/ComfyUI/models
-        - ./containers/demo2/custom_nodes:/ComfyUI/custom_nodes
+        - ./containers/demo2/output:/home/ComfyUI/output
+        - ./containers/demo2/input:/home/ComfyUI/input
+        - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/home/ComfyUI/models
+        - ./containers/demo2/custom_nodes:/home/ComfyUI/custom_nodes
         - ./containers/demo2/notebooks:/notebooks
       deploy:
         resources:

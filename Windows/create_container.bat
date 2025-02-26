@@ -12,7 +12,7 @@ set "TEMPLATES_DIR=%SCRIPT_DIR%templates"
 
 rem Clear screen and show welcome message
 cls
-echo ComfyUI Containership 0.0.3
+echo ComfyUI Containership 1.0.0
 echo ============================
 echo.
 
@@ -90,7 +90,34 @@ if not exist "%SHARED_MODELS_DIR%" (
     mkdir "%SHARED_MODELS_DIR%"
     echo Created: %SHARED_MODELS_DIR%
 )
+:: Array of default folders to create inside the shared_models directory
+set folders[0]=checkpoints
+set folders[1]=clip
+set folders[2]=clip_vision
+set folders[3]=configs
+set folders[4]=controlnet
+set folders[4]=diffusers
+set folders[4]=diffusion_models
+set folders[4]=embeddings
+set folders[4]=gligen
+set folders[4]=hypernetworks
+set folders[4]=loras
+set folders[4]=photomaker
+set folders[4]=style_models
+set folders[4]=text_encoders
+set folders[4]=unet
+set folders[4]=upscale_models
+set folders[4]=vae
+set folders[4]=vae_approx
 
+for /L %%i in (0,1,4) do (
+    if not exist "%SHARED_MODELS_DIR%\!folders[%%i]!" (
+        mkdir "%SHARED_MODELS_DIR%\!folders[%%i]!"
+        echo Created: %SHARED_MODELS_DIR%\!folders[%%i]!
+    ) else (
+        echo Already exists: %SHARED_MODELS_DIR%\!folders[%%i]!
+    )
+)
 rem Find next available port
 set /a PORT=%BASE_PORT%
 if exist "%DOCKER_COMPOSE_FILE%" (
