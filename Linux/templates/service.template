@@ -1,16 +1,17 @@
 {{container_name}}:
     build:
-      context: ./{{container_name}}
+      context: ./containers/{{container_name}}
       dockerfile: Dockerfile
     container_name: {{container_name}}
     ports:
       - "{{port}}:8188"
+      - "8888:8888"  # Jupyter Lab port
     volumes:
-      - ./{{container_name}}/ComfyUI:/ComfyUI
-      - ./{{container_name}}/output:/ComfyUI/output
-      - ./{{container_name}}/input:/ComfyUI/input
-      - {{shared_models_dir}}:/ComfyUI/models
-      - ./{{container_name}}/custom_nodes:/ComfyUI/custom_nodes
+      - ./containers/{{container_name}}/output:/home/ComfyUI/output
+      - ./containers/{{container_name}}/input:/home/ComfyUI/input
+      - {{shared_models_dir}}:/home/ComfyUI/models
+      - ./containers/{{container_name}}/custom_nodes:/home/ComfyUI/custom_nodes
+      - ./containers/{{container_name}}/notebooks:/notebooks
     deploy:
       resources:
         reservations:
@@ -19,5 +20,7 @@
               count: all
               capabilities: [gpu]
     restart: unless-stopped
+    runtime: nvidia
+    command: ["/startup.sh"]
     networks:
       - {{network}}
