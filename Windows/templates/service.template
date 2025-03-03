@@ -2,6 +2,8 @@
     build:
       context: ./containers/{{container_name}}
       dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: {{container_name}}
     ports:
       - "{{port}}:8188"

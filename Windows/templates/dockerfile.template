@@ -63,19 +63,14 @@ WORKDIR /home
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git
 
 WORKDIR /home/ComfyUI
-RUN pip3 install -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
-RUN mkdir -p /setup_scripts
-COPY scripts/* /setup_scripts/
-RUN chmod +x /setup_scripts/*
-
-RUN if [ -n "$(ls -A /setup_scripts/)" ]; then \
-        for script in /setup_scripts/*; do \
-            if [ -f "$script" ] && [ -x "$script" ]; then \
-                $script; \
-            fi; \
-        done; \
-    fi
+WORKDIR /home/ComfyUI/custom_nodes
+RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git
+WORKDIR /home/ComfyUI/custom_nodes/ComfyUI-Manager
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
 RUN mkdir /root/.jupyter
 RUN jupyter notebook --generate-config

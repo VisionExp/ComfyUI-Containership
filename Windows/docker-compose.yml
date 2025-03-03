@@ -3,6 +3,8 @@ services:
       build:
         context: ./containers/demo2
         dockerfile: Dockerfile
+        args:
+          BUILDKIT_INLINE_CACHE: 1
       container_name: demo2
       ports:
         - "8188:8188"
