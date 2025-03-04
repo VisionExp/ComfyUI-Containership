@@ -1,8 +1,0 @@
-#!/bin/bash
-# Example custom node installation script
-# Uncomment and modify the following lines to install custom nodes
-
-cd /custom_nodes
-git clone https://github.com/ltdrdata/ComfyUI-Manager.git
-cd ComfyUI-Manager
-pip install -r requirements.txt

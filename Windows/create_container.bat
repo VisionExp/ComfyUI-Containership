@@ -12,7 +12,7 @@ set "TEMPLATES_DIR=%SCRIPT_DIR%templates"
 
 rem Clear screen and show welcome message
 cls
-echo ComfyUI Containership 1.0.0
+echo ComfyUI Containership 1.0.1
 echo ============================
 echo.
 
@@ -70,12 +70,11 @@ if not exist "%TEMPLATES_DIR%" (
     echo with the following files:
     echo  - dockerfile.template
     echo  - service.template
-    echo  - setup.template
     pause
     exit /b 1
 )
 
-for %%f in (dockerfile service setup startup) do (
+for %%f in (dockerfile service startup) do (
     if not exist "%TEMPLATES_DIR%\%%f.template" (
         echo Error: %%f.template not found in %TEMPLATES_DIR%
         echo Please ensure all template files are present
@@ -135,8 +134,6 @@ for %%d in (
     "%CONTAINER_PATH%"
     "%CONTAINER_PATH%\input"
     "%CONTAINER_PATH%\output"
-    "%CONTAINER_PATH%\custom_nodes"
-    "%CONTAINER_PATH%\scripts"
 ) do (
     echo Creating directory: %%~d
     mkdir "%%~d" 2>nul
@@ -150,11 +147,10 @@ for %%d in (
 rem Process templates
 echo.
 echo Processing templates...
-for %%t in (dockerfile service setup startup) do (
+for %%t in (dockerfile service startup) do (
     set "TEMPLATE_FILE=%TEMPLATES_DIR%\%%t.template"
     if "%%t"=="dockerfile" set "OUTPUT_FILE=%CONTAINER_PATH%\Dockerfile"
     if "%%t"=="service" set "OUTPUT_FILE=temp_service.yml"
-    if "%%t"=="setup" set "OUTPUT_FILE=%CONTAINER_PATH%\scripts\example_setup.sh"
     if "%%t"=="startup" set "OUTPUT_FILE=%CONTAINER_PATH%\startup.sh"
 
     echo Processing template: %%t
@@ -255,12 +251,10 @@ echo - Base directory: %BASE_DIR%
 echo - Container directory: %CONTAINER_PATH%
 echo - Input directory: %CONTAINER_PATH%\input
 echo - Output directory: %CONTAINER_PATH%\output
-echo - Custom nodes directory: %CONTAINER_PATH%\custom_nodes
-echo - Scripts directory: %CONTAINER_PATH%\scripts
+
 echo.
 echo Created files:
 echo - Dockerfile: %CONTAINER_PATH%\Dockerfile
-echo - Setup script: %CONTAINER_PATH%\scripts\example_setup.sh
 echo - Docker Compose: %DOCKER_COMPOSE_FILE%
 echo.
 echo To start all containers:
