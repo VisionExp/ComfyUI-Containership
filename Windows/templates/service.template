@@ -7,7 +7,7 @@
     container_name: {{container_name}}
     ports:
       - "{{port}}:8188"
-      - "8888:8888"  # Jupyter Lab port
+      - "{{jupyter_port}}:8888"  # Jupyter Lab port
     volumes:
       - ./containers/{{container_name}}/output:/home/ComfyUI/output
       - ./containers/{{container_name}}/input:/home/ComfyUI/input

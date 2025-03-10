@@ -7,12 +7,13 @@ set "BASE_DIR=%SCRIPT_DIR%containers"
 set "SHARED_MODELS_DIR=%SCRIPT_DIR%shared_models"
 set "DOCKER_NETWORK=comfyui_network"
 set "BASE_PORT=8188"
+set "BASE_JUPYTER_PORT=8888"
 set "DOCKER_COMPOSE_FILE=%SCRIPT_DIR%docker-compose.yml"
 set "TEMPLATES_DIR=%SCRIPT_DIR%templates"
 
 rem Clear screen and show welcome message
 cls
-echo ComfyUI Containership 1.0.1
+echo ComfyUI Containership 1.0.2
 echo ============================
 echo.
 
@@ -89,43 +90,27 @@ if not exist "%SHARED_MODELS_DIR%" (
     mkdir "%SHARED_MODELS_DIR%"
     echo Created: %SHARED_MODELS_DIR%
 )
-:: Array of default folders to create inside the shared_models directory
-set folders[0]=checkpoints
-set folders[1]=clip
-set folders[2]=clip_vision
-set folders[3]=configs
-set folders[4]=controlnet
-set folders[4]=diffusers
-set folders[4]=diffusion_models
-set folders[4]=embeddings
-set folders[4]=gligen
-set folders[4]=hypernetworks
-set folders[4]=loras
-set folders[4]=photomaker
-set folders[4]=style_models
-set folders[4]=text_encoders
-set folders[4]=unet
-set folders[4]=upscale_models
-set folders[4]=vae
-set folders[4]=vae_approx
 
-for /L %%i in (0,1,4) do (
-    if not exist "%SHARED_MODELS_DIR%\!folders[%%i]!" (
-        mkdir "%SHARED_MODELS_DIR%\!folders[%%i]!"
-        echo Created: %SHARED_MODELS_DIR%\!folders[%%i]!
-    ) else (
-        echo Already exists: %SHARED_MODELS_DIR%\!folders[%%i]!
-    )
-)
 rem Find next available port
 set /a PORT=%BASE_PORT%
 if exist "%DOCKER_COMPOSE_FILE%" (
-    for /f "tokens=1 delims=:" %%p in ('findstr /r ".*:[0-9]*:8188" "%DOCKER_COMPOSE_FILE%" 2^>nul') do (
-        set "FOUND_PORT=%%p"
-        set "FOUND_PORT=!FOUND_PORT:~-4!"
-        if !FOUND_PORT! GTR !PORT! set /a PORT=!FOUND_PORT!+1
+    rem Simple approach: increment port by 1 for each container
+    for /f %%a in ('type "%DOCKER_COMPOSE_FILE%" ^| find /c "container_name:"') do (
+        set /a PORT=%BASE_PORT% + %%a
     )
 )
+
+rem Find next available jupyter_port
+set /a JUPYTER_PORT=%BASE_JUPYTER_PORT%
+if exist "%DOCKER_COMPOSE_FILE%" (
+    rem Simple approach: increment jupyter port by 1 for each container
+    for /f %%a in ('type "%DOCKER_COMPOSE_FILE%" ^| find /c "container_name:"') do (
+        set /a JUPYTER_PORT=%BASE_JUPYTER_PORT% + %%a
+    )
+)
+
+echo ComfyUI port assigned: %PORT%
+echo Jupyter port assigned: %JUPYTER_PORT%
 
 rem Create container directory structure
 echo.
@@ -134,6 +119,8 @@ for %%d in (
     "%CONTAINER_PATH%"
     "%CONTAINER_PATH%\input"
     "%CONTAINER_PATH%\output"
+    "%CONTAINER_PATH%\custom_nodes"
+    "%CONTAINER_PATH%\notebooks"
 ) do (
     echo Creating directory: %%~d
     mkdir "%%~d" 2>nul
@@ -163,80 +150,63 @@ for %%t in (dockerfile service startup) do (
         set "line=%%l"
         set "line=!line:{{container_name}}=%CONTAINER_NAME%!"
         set "line=!line:{{port}}=%PORT%!"
+        set "line=!line:{{jupyter_port}}=%JUPYTER_PORT%!"
         set "line=!line:{{shared_models_dir}}=%SHARED_MODELS_DIR%!"
         set "line=!line:{{network}}=%DOCKER_NETWORK%!"
         echo !line!>>"!OUTPUT_FILE!"
     )
 )
 
-rem Update docker-compose.yml with proper indentation
-if exist "temp_service.yml" (
-    if not exist "%DOCKER_COMPOSE_FILE%" (
-        echo Creating new docker-compose.yml
-        echo version: '3.3'>"%DOCKER_COMPOSE_FILE%"
-        echo services:>>"%DOCKER_COMPOSE_FILE%"
-    )
+rem Update docker-compose.yml
+echo.
+echo Updating docker-compose.yml...
 
-    echo Updating docker-compose.yml with proper indentation...
+rem Create temporary files
+if exist "temp_service_indented.yml" del "temp_service_indented.yml"
+if exist "temp_compose.yml" del "temp_compose.yml"
 
-    rem Create a temporary file for the indented service
-    if exist "temp_indented.yml" del "temp_indented.yml"
+rem Create a new docker-compose file if it doesn't exist
+if not exist "%DOCKER_COMPOSE_FILE%" (
+    echo Creating new docker-compose.yml
+    echo services:> "%DOCKER_COMPOSE_FILE%"
+    echo networks:>> "%DOCKER_COMPOSE_FILE%"
+    echo   comfyui_network:>> "%DOCKER_COMPOSE_FILE%"
+    echo     external: true>> "%DOCKER_COMPOSE_FILE%"
+)
 
-    rem Add indentation to each non-empty line
-    for /f "delims=" %%l in (temp_service.yml) do (
-        echo   %%l>>temp_indented.yml
-    )
+rem Format the new service with proper indentation
+echo   %CONTAINER_NAME%:> temp_service_indented.yml
+for /f "skip=1 delims=" %%l in (temp_service.yml) do (
+    set "line=%%l"
+    set "indented_line=      !line!"
+    echo !indented_line!>> temp_service_indented.yml
+)
 
-    rem Find the networks section if it exists
-    set "networks_line="
-    set "line_num=0"
-    set "insert_line=0"
+rem Create a temporary file with the updated content
+type "%DOCKER_COMPOSE_FILE%" > temp_compose.yml
 
-    for /f "delims=" %%l in ('type "%DOCKER_COMPOSE_FILE%"') do (
-        set /a line_num+=1
-        echo %%l | findstr /r "^networks:" >nul
+rem Find the position to insert the new service (after "services:" line)
+set "insert_done="
+for /f "delims=" %%a in (temp_compose.yml) do (
+    if not defined insert_done (
+        echo %%a > temp_compose_new.yml
+        echo %%a | findstr /C:"services:" > nul
         if not errorlevel 1 (
-            set "networks_line=!line_num!"
-        )
-    )
-
-    rem Create the final file
-    if exist "temp_final.yml" del "temp_final.yml"
-
-    if defined networks_line (
-        rem Copy content up to networks line
-        set /a insert_line=networks_line-1
-        for /f "tokens=* delims=" %%a in ('type "%DOCKER_COMPOSE_FILE%"') do (
-            set /a counter+=1
-            if !counter! leq !insert_line! echo %%a>>temp_final.yml
-        )
-
-        rem Add the new service
-        type temp_indented.yml>>temp_final.yml
-
-        rem Add the networks section and remaining content
-        set "copy_started="
-        for /f "tokens=* delims=" %%a in ('type "%DOCKER_COMPOSE_FILE%"') do (
-            if defined copy_started (
-                echo %%a>>temp_final.yml
-            ) else if "%%a" == "networks:" (
-                echo %%a>>temp_final.yml
-                set "copy_started=1"
-            )
+            type temp_service_indented.yml >> temp_compose_new.yml
+            set "insert_done=1"
         )
     ) else (
-        rem If no networks section, just append the service
-        type "%DOCKER_COMPOSE_FILE%">temp_final.yml
-        type temp_indented.yml>>temp_final.yml
+        echo %%a >> temp_compose_new.yml
     )
-
-    rem Replace the original file
-    move /y temp_final.yml "%DOCKER_COMPOSE_FILE%" >nul
-
-    rem Clean up temporary files
-    if exist "temp_service.yml" del "temp_service.yml"
-    if exist "temp_indented.yml" del "temp_indented.yml"
 )
+
+rem Replace the original file
+move /y temp_compose_new.yml "%DOCKER_COMPOSE_FILE%" >nul
+
+rem Clean up temporary files
+if exist "temp_service.yml" del "temp_service.yml"
+if exist "temp_service_indented.yml" del "temp_service_indented.yml"
+if exist "temp_compose.yml" del "temp_compose.yml"
 
 echo.
 echo ============================
@@ -245,17 +215,21 @@ echo ============================
 echo.
 echo New service '%CONTAINER_NAME%' added to %DOCKER_COMPOSE_FILE%
 echo Port assigned: %PORT%
+echo Jupyter Port assigned: %JUPYTER_PORT%
 echo.
 echo Created directories:
 echo - Base directory: %BASE_DIR%
 echo - Container directory: %CONTAINER_PATH%
 echo - Input directory: %CONTAINER_PATH%\input
 echo - Output directory: %CONTAINER_PATH%\output
+echo - Custom nodes directory: %CONTAINER_PATH%\custom_nodes
+echo - Notebooks directory: %CONTAINER_PATH%\notebooks
 
 echo.
 echo Created files:
 echo - Dockerfile: %CONTAINER_PATH%\Dockerfile
 echo - Docker Compose: %DOCKER_COMPOSE_FILE%
+echo - Startup script: %CONTAINER_PATH%\startup.sh
 echo.
 echo To start all containers:
 echo   docker-compose up -d --build
