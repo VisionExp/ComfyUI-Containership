@@ -13,7 +13,7 @@ set "TEMPLATES_DIR=%SCRIPT_DIR%templates"
 
 rem Clear screen and show welcome message
 cls
-echo ComfyUI Containership 1.0.2
+echo ComfyUI Containership 1.0.5
 echo ============================
 echo.
 

@@ -1,32 +1,4 @@
-services:   
- 
-          build:  
-            context: ./containers/demo1  
-            dockerfile: Dockerfile  
-            args:  
-              BUILDKIT_INLINE_CACHE: 1  
-          container_name: demo1  
-          ports:  
-            - "8188:8188"  
-            - "8888:8888"  # Jupyter Lab port  
-          volumes:  
-            - ./containers/demo1/output:/home/ComfyUI/output  
-            - ./containers/demo1/input:/home/ComfyUI/input  
-            - F:\WORK\Docker_Projects\ComfyUI-Containership\Windows\shared_models:/home/ComfyUI/models  
-            - ./containers/demo1/custom_nodes:/home/ComfyUI/custom_nodes  
-            - ./containers/demo1/notebooks:/notebooks  
-          deploy:  
-            resources:  
-              reservations:  
-                devices:  
-                  - driver: nvidia  
-                    count: all  
-                    capabilities: [gpu]  
-          restart: unless-stopped  
-          runtime: nvidia  
-          command: ["/startup.sh"]  
-          networks:  
-            - comfyui_network  
+services:
 networks:   
   comfyui_network:   
     external: true   
